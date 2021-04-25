@@ -28,7 +28,7 @@ type iDownloader interface {
 type iLister interface {
 	Stat(ctx context.Context, key string) (entry kodo.Entry, err error)
 	Delete(ctx context.Context, key string) (err error)
-	BatchDelete(ctx context.Context, key ...string) (rets []kodo.BatchItemRet, err error)
+	BatchDelete(ctx context.Context, keys ...string) (rets []kodo.BatchItemRet, err error)
 	ListPrefix(ctx context.Context, prefix, marker string, limit int) (entrys []kodo.ListItem, markerOut string, err error)
 }
 
@@ -247,6 +247,10 @@ func (b *kodoBatch) Delete(k ds.Key) error {
 	return nil
 }
 
+func (b *kodoBatch) CalcJobs() int {
+	return len(b.puts) + ((len(b.deletes) + b.deleteLimit - 1) / b.deleteLimit)
+}
+
 func (b *kodoBatch) Commit() error {
 	var (
 		deleteKeys []string = make([]string, 0, len(b.deletes))
@@ -255,7 +259,7 @@ func (b *kodoBatch) Commit() error {
 		deleteKeys = append(deleteKeys, b.s.fixKey(key))
 	}
 
-	numJobs := len(b.puts) + (len(deleteKeys) / b.deleteLimit)
+	numJobs := b.CalcJobs()
 	jobs := make(chan func() error, numJobs)
 	results := make(chan error, numJobs)
 
