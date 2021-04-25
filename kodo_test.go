@@ -159,7 +159,49 @@ func (m *mockKodoApi) ListPrefix(ctx context.Context, prefix, marker string, lim
 	return entrys, "", io.EOF
 }
 
-func TestKodoDs(t *testing.T) {
+func TestKodoDsBaseApi(t *testing.T) {
+	cfg := &Config{
+		Config: &operation.Config{
+			UcHosts: []string{"test"},
+		},
+		DeleteLimit:      3,
+		BatchConcurrency: 4,
+	}
+	cfg.fixConfig()
+
+	kodoApi := &mockKodoApi{
+		files:    make(map[string][]byte),
+		errorDel: make(map[string]struct{}),
+	}
+
+	obs := &KodoDs{
+		Config:     cfg,
+		uploader:   kodoApi,
+		downloader: kodoApi,
+		lister:     kodoApi,
+	}
+
+	key := ds.NewKey("key1")
+	err := obs.Delete(key)
+	assert.NoError(t, err)
+
+	size, err := obs.GetSize(key)
+	assert.Error(t, ds.ErrNotFound, err)
+	assert.Equal(t, -1, size)
+
+	exists, err := obs.Has(key)
+	assert.NoError(t, err)
+	assert.False(t, exists)
+
+	val := []byte("123")
+	err = obs.Put(key, val)
+	assert.NoError(t, err)
+	size, err = obs.GetSize(key)
+	assert.NoError(t, err)
+	assert.Equal(t, len(val), size)
+}
+
+func TestKodoDsQuery(t *testing.T) {
 
 }
 

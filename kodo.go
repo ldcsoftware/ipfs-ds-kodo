@@ -101,7 +101,7 @@ func NewKodoDatastore(cfg *Config) (*KodoDs, error) {
 		lister:     lister,
 	}
 
-	log.Printf("New kodo ds cfg:%+v sdk:%+v \n", cfg, cfg.Config)
+	log.Printf("New kodo datastore cfg:%+v sdk:%+v \n", cfg, cfg.Config)
 	return s, nil
 }
 
