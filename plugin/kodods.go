@@ -6,7 +6,7 @@ import (
 	"github.com/ipfs/go-ipfs/plugin"
 	"github.com/ipfs/go-ipfs/repo"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
-	kodods "github.com/ldcsoftware/go-ds-kodo"
+	kodods "github.com/ldcsoftware/ipfs-ds-kodo"
 	"github.com/qiniupd/qiniu-go-sdk/syncdata/operation"
 )
 
@@ -63,7 +63,7 @@ func (p KodoPlugin) DatastoreConfigParser() fsrepo.ConfigFromMap {
 		batchConcurrency, _ := m["batchConcurrency"].(int)
 
 		return &KodoConfig{
-			cfg: kodods.Config{
+			cfg: &kodods.Config{
 				Config: &operation.Config{
 					UcHosts:       ucHosts,
 					Bucket:        bucket,
@@ -83,7 +83,7 @@ func (p KodoPlugin) DatastoreConfigParser() fsrepo.ConfigFromMap {
 }
 
 type KodoConfig struct {
-	cfg kodods.Config
+	cfg *kodods.Config
 }
 
 func (c *KodoConfig) DiskSpec() fsrepo.DiskSpec {
