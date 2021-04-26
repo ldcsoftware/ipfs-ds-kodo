@@ -37,9 +37,17 @@ func (p KodoPlugin) DatastoreConfigParser() fsrepo.ConfigFromMap {
 		fmt.Printf("datastore config parser m:%+v \n", m)
 		fmt.Printf("datastore config parser m:%T \n", m["ucHosts"])
 
-		ucHosts, ok := m["ucHosts"].([]string)
+		ucHostsOri, ok := m["ucHosts"].([]interface{})
 		if !ok {
 			return nil, fmt.Errorf("kodo: no ucHosts specified")
+		}
+		ucHosts := make([]string, 0, len(ucHostsOri))
+		for _, ucHostUri := range ucHostsOri {
+			ucHost, ok := ucHostUri.(string)
+			if !ok {
+				return nil, fmt.Errorf("kodo: no ucHost specified")
+			}
+			ucHosts = append(ucHosts, ucHost)
 		}
 
 		bucket, ok := m["bucket"].(string)
