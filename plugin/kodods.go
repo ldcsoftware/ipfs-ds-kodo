@@ -7,7 +7,7 @@ import (
 	"github.com/ipfs/go-ipfs/repo"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	kodods "github.com/ldcsoftware/ipfs-ds-kodo"
-	"github.com/qiniupd/qiniu-go-sdk/syncdata/operation"
+	"github.com/ldcsoftware/qiniu-go-sdk/syncdata/operation"
 )
 
 var Plugins = []plugin.Plugin{

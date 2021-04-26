@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	kodods "github.com/ldcsoftware/ipfs-ds-kodo"
-	"github.com/qiniupd/qiniu-go-sdk/syncdata/operation"
+	"github.com/ldcsoftware/qiniu-go-sdk/syncdata/operation"
 )
 
 func TestKodoPluginDatastoreConfigParser(t *testing.T) {

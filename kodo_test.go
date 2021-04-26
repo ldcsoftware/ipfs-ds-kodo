@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	ds "github.com/ipfs/go-datastore"
-	"github.com/qiniupd/qiniu-go-sdk/api.v8/kodo"
-	"github.com/qiniupd/qiniu-go-sdk/syncdata/operation"
+	"github.com/ldcsoftware/qiniu-go-sdk/api.v8/kodo"
+	"github.com/ldcsoftware/qiniu-go-sdk/syncdata/operation"
 	"github.com/stretchr/testify/assert"
 )
 
