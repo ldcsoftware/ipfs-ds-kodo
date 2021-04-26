@@ -34,6 +34,8 @@ func (p KodoPlugin) DatastoreTypeName() string {
 
 func (p KodoPlugin) DatastoreConfigParser() fsrepo.ConfigFromMap {
 	return func(m map[string]interface{}) (fsrepo.DatastoreConfig, error) {
+		fmt.Printf("datastore config parser m:%v \n", m)
+
 		ucHosts, ok := m["ucHosts"].([]string)
 		if !ok {
 			return nil, fmt.Errorf("kodo: no ucHosts specified")
