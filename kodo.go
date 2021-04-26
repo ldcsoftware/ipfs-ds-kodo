@@ -106,14 +106,17 @@ func NewKodoDatastore(cfg *Config) (*KodoDs, error) {
 }
 
 func (s *KodoDs) Put(key ds.Key, value []byte) error {
+	log.Printf("kodo ds put key:%v \n", key)
 	return s.uploader.UploadData(context.Background(), s.fixKey(key), value, nil)
 }
 
 func (s *KodoDs) Sync(key ds.Key) error {
+	log.Printf("kodo ds sync key:%v \n", key)
 	return nil
 }
 
 func (s *KodoDs) Get(key ds.Key) ([]byte, error) {
+	log.Printf("kodo ds get key:%v \n", key)
 	data, err := s.downloader.DownloadBytes(s.fixKey(key))
 	if err != nil {
 		if isNotFound(err) {
@@ -125,6 +128,7 @@ func (s *KodoDs) Get(key ds.Key) ([]byte, error) {
 }
 
 func (s *KodoDs) Has(key ds.Key) (exists bool, err error) {
+	log.Printf("kodo ds has key:%v \n", key)
 	_, err = s.GetSize(key)
 	if err != nil {
 		if err == ds.ErrNotFound {
@@ -136,6 +140,7 @@ func (s *KodoDs) Has(key ds.Key) (exists bool, err error) {
 }
 
 func (s *KodoDs) GetSize(key ds.Key) (size int, err error) {
+	log.Printf("kodo ds get size key:%v \n", key)
 	entry, err := s.lister.Stat(context.Background(), s.fixKey(key))
 	if err != nil {
 		if isNotFound(err) {
@@ -147,6 +152,7 @@ func (s *KodoDs) GetSize(key ds.Key) (size int, err error) {
 }
 
 func (s *KodoDs) Delete(key ds.Key) error {
+	log.Printf("kodo ds delete key:%v \n", key)
 	err := s.lister.Delete(context.Background(), s.fixKey(key))
 	if isNotFound(err) {
 		err = nil
@@ -155,6 +161,8 @@ func (s *KodoDs) Delete(key ds.Key) error {
 }
 
 func (s *KodoDs) Query(q dsq.Query) (dsq.Results, error) {
+	log.Printf("kodo ds query key:%v \n", q.Prefix)
+
 	if q.Orders != nil || q.Filters != nil || q.Offset != 0 {
 		return nil, fmt.Errorf("kodods: filters or orders or Offset are not supported")
 	}
@@ -206,6 +214,7 @@ func (s *KodoDs) fixKey_(key string) string {
 }
 
 func (s *KodoDs) Batch() (ds.Batch, error) {
+	log.Printf("kodo ds batch \n")
 	return &kodoBatch{
 		s:           s,
 		puts:        make(map[ds.Key][]byte),
@@ -237,13 +246,15 @@ type batchOp struct {
 	delete bool
 }
 
-func (b *kodoBatch) Put(k ds.Key, val []byte) error {
-	b.puts[k] = val
+func (b *kodoBatch) Put(key ds.Key, val []byte) error {
+	log.Printf("kodo ds batch put key:%v \n", key)
+	b.puts[key] = val
 	return nil
 }
 
-func (b *kodoBatch) Delete(k ds.Key) error {
-	b.deletes = append(b.deletes, k)
+func (b *kodoBatch) Delete(key ds.Key) error {
+	log.Printf("kodo ds batch delete key:%v \n", key)
+	b.deletes = append(b.deletes, key)
 	return nil
 }
 
@@ -252,6 +263,7 @@ func (b *kodoBatch) CalcJobs() int {
 }
 
 func (b *kodoBatch) Commit() error {
+	log.Printf("kodo ds batch commit \n")
 	var (
 		deleteKeys []string = make([]string, 0, len(b.deletes))
 	)

@@ -299,3 +299,19 @@ func TestBatchOp(t *testing.T) {
 	assert.Equal(t, newKeyCount, len(kodoApi.files))
 
 }
+
+func TestKodoDs(t *testing.T) {
+	cfg := &Config{
+		Config: &operation.Config{
+			UcHosts: []string{"http://10.200.20.25:10221"},
+			Ak:      "_SLDtFpJIBdFqtdfWDeBnlF4Ct0L2oEYmK_13Ji_",
+			Sk:      "IsuQfzgbuqoauibtODvjJ-mCNgrOL31uNAiFvsWV",
+			Bucket:  "ldc-bucket02",
+		},
+	}
+
+	tds, err := NewKodoDatastore(cfg)
+	assert.NoError(t, err)
+	err = tds.Put(ds.NewKey("ldc-test-key"), []byte("ldcsoftware"))
+	assert.NoError(t, err)
+}
