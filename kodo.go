@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"path"
 	"strings"
@@ -163,18 +162,21 @@ func (s *KodoDs) Delete(key ds.Key) error {
 func (s *KodoDs) Query(q dsq.Query) (dsq.Results, error) {
 	log.Printf("kodo ds query key:%v \n", q.Prefix)
 
-	if q.Orders != nil || q.Filters != nil || q.Offset != 0 {
-		return nil, fmt.Errorf("kodods: filters or orders or Offset are not supported")
-	}
-
 	var entrys []kodo.ListItem
 	var marker string
 	var err error
 
+	qNaive := q
+	qNaive.Prefix = ""
+	prefix := ds.NewKey(q.Prefix).String()
+	if prefix != "/" {
+		q.Prefix = s.fixKey_(prefix) + "/"
+	}
+
 	nextValue := func() (dsq.Result, bool) {
 		if len(entrys) == 0 {
 			entrys, marker, err = s.lister.ListPrefix(context.Background(), s.fixKey_(q.Prefix), marker, s.ListLimit)
-			if err != nil && err != io.EOF {
+			if err != nil {
 				return dsq.Result{Error: err}, false
 			}
 		}
@@ -193,12 +195,13 @@ func (s *KodoDs) Query(q dsq.Query) (dsq.Results, error) {
 		return dsq.Result{Entry: entry}, true
 	}
 
-	return dsq.ResultsFromIterator(q, dsq.Iterator{
+	r := dsq.ResultsFromIterator(q, dsq.Iterator{
 		Close: func() error {
 			return nil
 		},
 		Next: nextValue,
-	}), nil
+	})
+	return dsq.NaiveQueryApply(qNaive, r), nil
 }
 
 func (s *KodoDs) Close() error {

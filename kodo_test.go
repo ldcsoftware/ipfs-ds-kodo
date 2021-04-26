@@ -312,6 +312,6 @@ func TestKodoDs(t *testing.T) {
 
 	tds, err := NewKodoDatastore(cfg)
 	assert.NoError(t, err)
-	err = tds.Put(ds.NewKey("ldc-test-key"), []byte("ldcsoftware"))
+	err = tds.Put(ds.NewKey("/ldc-test-key"), []byte("ldcsoftware"))
 	assert.NoError(t, err)
 }
