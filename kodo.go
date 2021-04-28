@@ -115,7 +115,6 @@ func (s *KodoDs) Sync(key ds.Key) error {
 }
 
 func (s *KodoDs) Get(key ds.Key) ([]byte, error) {
-	log.Printf("kodo ds get key:%v \n", key)
 	data, err := s.downloader.DownloadBytes(s.fixKey(key))
 	if err != nil {
 		if isNotFound(err) {
@@ -127,7 +126,6 @@ func (s *KodoDs) Get(key ds.Key) ([]byte, error) {
 }
 
 func (s *KodoDs) Has(key ds.Key) (exists bool, err error) {
-	log.Printf("kodo ds has key:%v \n", key)
 	_, err = s.GetSize(key)
 	if err != nil {
 		if err == ds.ErrNotFound {
@@ -139,7 +137,6 @@ func (s *KodoDs) Has(key ds.Key) (exists bool, err error) {
 }
 
 func (s *KodoDs) GetSize(key ds.Key) (size int, err error) {
-	log.Printf("kodo ds get size key:%v \n", key)
 	entry, err := s.lister.Stat(context.Background(), s.fixKey(key))
 	if err != nil {
 		if isNotFound(err) {
@@ -160,8 +157,6 @@ func (s *KodoDs) Delete(key ds.Key) error {
 }
 
 func (s *KodoDs) Query(q dsq.Query) (dsq.Results, error) {
-	log.Printf("kodo ds query key:%v \n", q.Prefix)
-
 	var entrys []kodo.ListItem
 	var marker string
 	var err error
