@@ -224,7 +224,7 @@ func (s *KodoDs) Batch() (ds.Batch, error) {
 
 func isNotFound(err error) bool {
 	var hc httpCoder
-	return errors.As(err, &hc) && isNotFoundCode(hc.HttpCode())
+	return strings.Contains(strings.ToLower(err.Error()), "not found") || errors.As(err, &hc) && isNotFoundCode(hc.HttpCode())
 }
 
 func isNotFoundCode(code int) bool {

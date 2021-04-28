@@ -315,3 +315,32 @@ func TestKodoDs(t *testing.T) {
 	err = tds.Put(ds.NewKey("/ldc-test-key"), []byte("ldcsoftware"))
 	assert.NoError(t, err)
 }
+
+type TestHttpError struct {
+	error
+	code int
+}
+
+func (e TestHttpError) HttpCode() int {
+	return e.code
+}
+
+func TestError(t *testing.T) {
+	e := &TestHttpError{error: fmt.Errorf("abc"), code: 404}
+	assert.True(t, isNotFound(e))
+
+	e = &TestHttpError{error: fmt.Errorf("abc"), code: 405}
+	assert.False(t, isNotFound(e))
+
+	e = &TestHttpError{error: fmt.Errorf("asf not found sdf")}
+	assert.True(t, isNotFound(e))
+
+	e = &TestHttpError{error: fmt.Errorf("Not Found")}
+	assert.True(t, isNotFound(e))
+
+	e = &TestHttpError{error: fmt.Errorf("ot Found"), code: 404}
+	assert.True(t, isNotFound(e))
+
+	e = &TestHttpError{error: fmt.Errorf("ot Found"), code: 34}
+	assert.False(t, isNotFound(e))
+}
