@@ -182,21 +182,21 @@ func TestKodoDsBaseApi(t *testing.T) {
 	}
 
 	key := ds.NewKey("key1")
-	err := obs.Delete(key)
+	err := obs.Delete(context.Background(), key)
 	assert.NoError(t, err)
 
-	size, err := obs.GetSize(key)
+	size, err := obs.GetSize(context.Background(), key)
 	assert.Error(t, ds.ErrNotFound, err)
 	assert.Equal(t, -1, size)
 
-	exists, err := obs.Has(key)
+	exists, err := obs.Has(context.Background(), key)
 	assert.NoError(t, err)
 	assert.False(t, exists)
 
 	val := []byte("123")
-	err = obs.Put(key, val)
+	err = obs.Put(context.Background(), key, val)
 	assert.NoError(t, err)
-	size, err = obs.GetSize(key)
+	size, err = obs.GetSize(context.Background(), key)
 	assert.NoError(t, err)
 	assert.Equal(t, len(val), size)
 }
@@ -229,7 +229,7 @@ func TestBatchOp(t *testing.T) {
 		downloader: kodoApi,
 		lister:     kodoApi,
 	}
-	batch, err := obs.Batch()
+	batch, err := obs.Batch(context.Background())
 	assert.NoError(t, err)
 
 	keyCount := 10
@@ -237,21 +237,21 @@ func TestBatchOp(t *testing.T) {
 	for i := 0; i < keyCount; i++ {
 		key := KeyPrefix + fmt.Sprint(i+1+keyStart)
 		dsKey := ds.NewKey(key)
-		err = batch.Put(dsKey, []byte(key))
+		err = batch.Put(context.Background(), dsKey, []byte(key))
 		assert.NoError(t, err)
 	}
 	assert.Equal(t, 0, len(kodoApi.files))
-	batch.Commit()
+	batch.Commit(context.Background())
 	assert.Equal(t, keyCount, len(kodoApi.files))
 
-	batch, err = obs.Batch()
+	batch, err = obs.Batch(context.Background())
 	assert.NoError(t, err)
 	keyStart += keyCount
 
 	for i := 0; i < keyCount; i++ {
 		key := KeyPrefix + fmt.Sprint(i+1+keyStart)
 		dsKey := ds.NewKey(key)
-		err = batch.Put(dsKey, []byte(key))
+		err = batch.Put(context.Background(), dsKey, []byte(key))
 		assert.NoError(t, err)
 	}
 
@@ -260,14 +260,14 @@ func TestBatchOp(t *testing.T) {
 	for _, i := range deleteKeyIdxs {
 		key := KeyPrefix + fmt.Sprint(i+1)
 		dsKey := ds.NewKey(key)
-		err = batch.Delete(dsKey)
+		err = batch.Delete(context.Background(), dsKey)
 		assert.NoError(t, err)
 	}
 	kBatch := batch.(*kodoBatch)
 	numJobs := kBatch.CalcJobs()
 	assert.Equal(t, keyCount+2, numJobs)
 
-	err = batch.Commit()
+	err = batch.Commit(context.Background())
 	newKeyCount := keyCount*2 - 3
 	assert.NoError(t, err)
 	assert.Equal(t, newKeyCount, len(kodoApi.files))
@@ -284,36 +284,20 @@ func TestBatchOp(t *testing.T) {
 
 	fmt.Printf("last keyAdd:%v keyDel:%v errorDelKey:%v \n", keyAdd, keyDel, errorDelKey)
 
-	batch, err = obs.Batch()
+	batch, err = obs.Batch(context.Background())
 	assert.NoError(t, err)
 
-	err = batch.Put(keyAddDs, []byte(keyAdd))
+	err = batch.Put(context.Background(), keyAddDs, []byte(keyAdd))
 	assert.NoError(t, err)
 
-	batch.Delete(keyDelDs)
-	batch.Delete(errorDelKeyDs)
+	batch.Delete(context.Background(), keyDelDs)
+	batch.Delete(context.Background(), errorDelKeyDs)
 
-	err = batch.Commit()
+	err = batch.Commit(context.Background())
 	fmt.Printf("last batch commit err:%v \n", err)
 	assert.Error(t, err)
 	assert.Equal(t, newKeyCount, len(kodoApi.files))
 
-}
-
-func TestKodoDs(t *testing.T) {
-	cfg := &Config{
-		Config: &operation.Config{
-			UcHosts: []string{"http://10.200.20.25:10221"},
-			Ak:      "_SLDtFpJIBdFqtdfWDeBnlF4Ct0L2oEYmK_13Ji_",
-			Sk:      "IsuQfzgbuqoauibtODvjJ-mCNgrOL31uNAiFvsWV",
-			Bucket:  "ldc-bucket02",
-		},
-	}
-
-	tds, err := NewKodoDatastore(cfg)
-	assert.NoError(t, err)
-	err = tds.Put(ds.NewKey("/ldc-test-key"), []byte("ldcsoftware"))
-	assert.NoError(t, err)
 }
 
 type TestHttpError struct {

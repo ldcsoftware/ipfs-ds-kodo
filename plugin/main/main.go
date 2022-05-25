@@ -1,7 +1,7 @@
 package main
 
 import (
-	plugin "github.com/ipfs/go-ds-kodo/plugin"
+	plugin "github.com/ldcsoftware/ipfs-ds-kodo/plugin"
 )
 
 var Plugins = plugin.Plugins //nolint

@@ -104,17 +104,17 @@ func NewKodoDatastore(cfg *Config) (*KodoDs, error) {
 	return s, nil
 }
 
-func (s *KodoDs) Put(key ds.Key, value []byte) error {
+func (s *KodoDs) Put(ctx context.Context, key ds.Key, value []byte) error {
 	log.Printf("kodo ds put key:%v \n", key)
-	return s.uploader.UploadData(context.Background(), s.fixKey(key), value, nil)
+	return s.uploader.UploadData(ctx, s.fixKey(key), value, nil)
 }
 
-func (s *KodoDs) Sync(key ds.Key) error {
+func (s *KodoDs) Sync(ctx context.Context, key ds.Key) error {
 	log.Printf("kodo ds sync key:%v \n", key)
 	return nil
 }
 
-func (s *KodoDs) Get(key ds.Key) ([]byte, error) {
+func (s *KodoDs) Get(ctx context.Context, key ds.Key) ([]byte, error) {
 	data, err := s.downloader.DownloadBytes(s.fixKey(key))
 	if err != nil {
 		if isNotFound(err) {
@@ -125,8 +125,8 @@ func (s *KodoDs) Get(key ds.Key) ([]byte, error) {
 	return data, err
 }
 
-func (s *KodoDs) Has(key ds.Key) (exists bool, err error) {
-	_, err = s.GetSize(key)
+func (s *KodoDs) Has(ctx context.Context, key ds.Key) (exists bool, err error) {
+	_, err = s.GetSize(ctx, key)
 	if err != nil {
 		if err == ds.ErrNotFound {
 			return false, nil
@@ -136,8 +136,8 @@ func (s *KodoDs) Has(key ds.Key) (exists bool, err error) {
 	return true, nil
 }
 
-func (s *KodoDs) GetSize(key ds.Key) (size int, err error) {
-	entry, err := s.lister.Stat(context.Background(), s.fixKey(key))
+func (s *KodoDs) GetSize(ctx context.Context, key ds.Key) (size int, err error) {
+	entry, err := s.lister.Stat(ctx, s.fixKey(key))
 	if err != nil {
 		if isNotFound(err) {
 			return -1, ds.ErrNotFound
@@ -147,16 +147,16 @@ func (s *KodoDs) GetSize(key ds.Key) (size int, err error) {
 	return int(entry.Fsize), nil
 }
 
-func (s *KodoDs) Delete(key ds.Key) error {
+func (s *KodoDs) Delete(ctx context.Context, key ds.Key) error {
 	log.Printf("kodo ds delete key:%v \n", key)
-	err := s.lister.Delete(context.Background(), s.fixKey(key))
+	err := s.lister.Delete(ctx, s.fixKey(key))
 	if isNotFound(err) {
 		err = nil
 	}
 	return err
 }
 
-func (s *KodoDs) Query(q dsq.Query) (dsq.Results, error) {
+func (s *KodoDs) Query(ctx context.Context, q dsq.Query) (dsq.Results, error) {
 	var entrys []kodo.ListItem
 	var marker string
 	var err error
@@ -170,7 +170,7 @@ func (s *KodoDs) Query(q dsq.Query) (dsq.Results, error) {
 
 	nextValue := func() (dsq.Result, bool) {
 		if len(entrys) == 0 {
-			entrys, marker, err = s.lister.ListPrefix(context.Background(), s.fixKey_(q.Prefix), marker, s.ListLimit)
+			entrys, marker, err = s.lister.ListPrefix(ctx, s.fixKey_(q.Prefix), marker, s.ListLimit)
 			if err != nil {
 				return dsq.Result{Error: err}, false
 			}
@@ -181,7 +181,7 @@ func (s *KodoDs) Query(q dsq.Query) (dsq.Results, error) {
 		}
 		entrys = entrys[1:]
 		if !q.KeysOnly {
-			value, err := s.Get(ds.NewKey(entry.Key))
+			value, err := s.Get(ctx, ds.NewKey(entry.Key))
 			if err != nil {
 				return dsq.Result{Error: err}, false
 			}
@@ -211,7 +211,7 @@ func (s *KodoDs) fixKey_(key string) string {
 	return path.Join(s.Prefix, key)
 }
 
-func (s *KodoDs) Batch() (ds.Batch, error) {
+func (s *KodoDs) Batch(ctx context.Context) (ds.Batch, error) {
 	log.Printf("kodo ds batch \n")
 	return &kodoBatch{
 		s:           s,
@@ -244,13 +244,13 @@ type batchOp struct {
 	delete bool
 }
 
-func (b *kodoBatch) Put(key ds.Key, val []byte) error {
+func (b *kodoBatch) Put(ctx context.Context, key ds.Key, val []byte) error {
 	log.Printf("kodo ds batch put key:%v \n", key)
 	b.puts[key] = val
 	return nil
 }
 
-func (b *kodoBatch) Delete(key ds.Key) error {
+func (b *kodoBatch) Delete(ctx context.Context, key ds.Key) error {
 	log.Printf("kodo ds batch delete key:%v \n", key)
 	b.deletes = append(b.deletes, key)
 	return nil
@@ -260,7 +260,7 @@ func (b *kodoBatch) CalcJobs() int {
 	return len(b.puts) + ((len(b.deletes) + b.deleteLimit - 1) / b.deleteLimit)
 }
 
-func (b *kodoBatch) Commit() error {
+func (b *kodoBatch) Commit(ctx context.Context) error {
 	log.Printf("kodo ds batch commit \n")
 	var (
 		deleteKeys []string = make([]string, 0, len(b.deletes))
@@ -290,7 +290,7 @@ func (b *kodoBatch) Commit() error {
 	}
 
 	for k, val := range b.puts {
-		jobs <- b.newPutJob(k, val)
+		jobs <- b.newPutJob(ctx, k, val)
 	}
 
 	for i := 0; i < len(deleteKeys); i += b.deleteLimit {
@@ -298,7 +298,7 @@ func (b *kodoBatch) Commit() error {
 		if len(deleteKeys[i:]) < limit {
 			limit = len(deleteKeys[i:])
 		}
-		jobs <- b.newDeleteJob(deleteKeys[i : i+limit])
+		jobs <- b.newDeleteJob(ctx, deleteKeys[i:i+limit])
 	}
 	close(jobs)
 
@@ -315,15 +315,15 @@ func (b *kodoBatch) Commit() error {
 	return nil
 }
 
-func (b *kodoBatch) newPutJob(k ds.Key, value []byte) func() error {
+func (b *kodoBatch) newPutJob(ctx context.Context, k ds.Key, value []byte) func() error {
 	return func() error {
-		return b.s.Put(k, value)
+		return b.s.Put(ctx, k, value)
 	}
 }
 
-func (b *kodoBatch) newDeleteJob(deletekeys []string) func() error {
+func (b *kodoBatch) newDeleteJob(ctx context.Context, deletekeys []string) func() error {
 	return func() error {
-		rets, err := b.s.lister.BatchDelete(context.Background(), deletekeys...)
+		rets, err := b.s.lister.BatchDelete(ctx, deletekeys...)
 		if err != nil && !isNotFound(err) {
 			return err
 		}
